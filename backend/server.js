@@ -1,10 +1,12 @@
 /**
- * server.js — Drishti Backend API
+ * server.js -- Drishti Backend API
  *
- * Express server with POST /analyze endpoint.
- * Uses rule-based logic (rules.js) as the decision engine.
- * Calls FastAPI AI service for enhanced content + smart decisions.
- * Proxies webcam emotion detection to AI engine.
+ * Express server with:
+ * - POST /analyze       -- Behavior analysis + AI decision
+ * - POST /detect-emotion -- Webcam emotion proxy
+ * - /auth/*             -- User authentication (register, login)
+ * - /keys/*             -- API key management
+ * - GET /sessions       -- Dashboard session data
  *
  * Port: 5000
  */
@@ -13,6 +15,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { analyzeRules } = require("./rules");
+const { authRouter } = require("./auth");
+const keysRouter = require("./keys");
+const { validateApiKey } = require("./rateLimit");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,16 +45,24 @@ app.use((req, res, next) => {
 // ── In-memory session store (for dashboard) ──
 const sessions = new Map();
 
+// ── Mount auth + key routes ────────────────────
+app.use("/auth", authRouter);
+app.use("/keys", keysRouter);
+
 // ── Health check ───────────────────────────────
 app.get("/", (req, res) => {
   res.json({
     service: "Drishti Decision Engine",
     status: "running",
-    version: "2.0.0",
+    version: "3.0.0",
     aiEngine: process.env.AI_SERVICE_URL || "not configured",
     endpoints: {
       analyze: "POST /analyze",
       detectEmotion: "POST /detect-emotion",
+      register: "POST /auth/register",
+      login: "POST /auth/login",
+      me: "GET /auth/me",
+      keys: "GET|POST /keys",
       sessions: "GET /sessions",
       health: "GET /",
     },
@@ -119,9 +132,8 @@ app.post("/detect-emotion", async (req, res) => {
 //   change, headline, cta, reason, emotion,
 //   confidence, contentType, priority, showPopup, reasoning
 // }
-app.post("/analyze", async (req, res) => {
+app.post("/analyze", validateApiKey, async (req, res) => {
   const {
-    apiKey,
     sessionId,
     page,
     section,
@@ -131,15 +143,6 @@ app.post("/analyze", async (req, res) => {
     emotion,
     frame,
   } = req.body;
-
-  // ── Validate API key ──
-  const validKeys = ["demo123", process.env.API_KEY].filter(Boolean);
-  if (!apiKey || !validKeys.includes(apiKey)) {
-    return res.status(401).json({
-      error: "Invalid API key",
-      change: false,
-    });
-  }
 
   // ── Validate required fields ──
   if (!sessionId) {
@@ -297,10 +300,14 @@ app.get("/sessions", (req, res) => {
 
 // ── Start server ───────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\nDrishti Decision Engine v2.0 running on http://localhost:${PORT}`);
-  console.log(`   POST /analyze        — Analyze behavior + AI decision`);
-  console.log(`   POST /detect-emotion — Webcam emotion detection`);
-  console.log(`   GET  /sessions       — View session data`);
-  console.log(`   GET  /               — Health check`);
+  console.log(`\nDrishti Decision Engine v3.0 running on http://localhost:${PORT}`);
+  console.log(`   POST /auth/register  -- Create account`);
+  console.log(`   POST /auth/login     -- Login, get JWT`);
+  console.log(`   GET  /auth/me        -- Profile (JWT required)`);
+  console.log(`   POST /keys           -- Generate API key (JWT required)`);
+  console.log(`   GET  /keys           -- List API keys (JWT required)`);
+  console.log(`   POST /analyze        -- Behavior analysis + AI`);
+  console.log(`   POST /detect-emotion -- Webcam emotion proxy`);
+  console.log(`   GET  /sessions       -- Dashboard data`);
   console.log(`   AI Service:          ${process.env.AI_SERVICE_URL || "not configured"}\n`);
 });
