@@ -43,15 +43,15 @@ export default function Dashboard() {
 
   function getReasonLabel(reason) {
     const map = {
-      low_engagement_fast_scroll: "⚡ Fast Scroll",
-      scanning_user_redirect: "👀 Scanning",
-      high_engagement_slow_read: "📖 Deep Reader",
-      long_session_offer: "🎁 Long Session",
-      low_interaction_assist: "🤝 Needs Help",
-      high_interaction_explore: "🔍 Explorer",
-      bored_user_engage: "😴 Bored",
-      confused_user_guide: "😕 Confused",
-      positive_emotion_convert: "❤️ Positive",
+      low_engagement_fast_scroll: "Fast Scroll",
+      scanning_user_redirect: "Scanning",
+      high_engagement_slow_read: "Deep Reader",
+      long_session_offer: "Long Session",
+      low_interaction_assist: "Needs Help",
+      high_interaction_explore: "Explorer",
+      bored_user_engage: "Bored",
+      confused_user_guide: "Confused",
+      positive_emotion_convert: "Positive",
       default: "— Default",
     };
     return map[reason] || reason || "—";
@@ -158,7 +158,7 @@ export default function Dashboard() {
               color: "#a8a29e",
             }}
           >
-            <p style={{ fontSize: "48px", marginBottom: "16px" }}>📊</p>
+            <p style={{ fontSize: "48px", marginBottom: "16px" }}>--</p>
             <p style={{ fontSize: "16px", fontWeight: 500, color: "#78716c" }}>
               No active sessions yet
             </p>
@@ -184,7 +184,7 @@ export default function Dashboard() {
               <StatCard
                 label="Active Sessions"
                 value={data.activeSessions}
-                icon="👥"
+                icon="#"
               />
               <StatCard
                 label="Total Interactions"
@@ -192,14 +192,14 @@ export default function Dashboard() {
                   (sum, s) => sum + s.totalInteractions,
                   0
                 )}
-                icon="📡"
+                icon="~"
               />
               <StatCard
                 label="Last Action"
                 value={getReasonLabel(
                   Object.values(data.sessions)[0]?.lastAction
                 )}
-                icon="🎯"
+                icon=">"
               />
             </div>
 
@@ -382,14 +382,14 @@ export default function Dashboard() {
                       >
                         {entry.section}
                       </span>
-                      <span>🖱 {entry.clicks}</span>
-                      <span>⏱ {entry.timeSpent}s</span>
+                      <span>clicks: {entry.clicks}</span>
+                      <span>t: {entry.timeSpent}s</span>
                       <span>
                         {entry.scrollSpeed === "fast"
-                          ? "⚡ fast"
+                          ? ">> fast"
                           : entry.scrollSpeed === "slow"
-                          ? "🐌 slow"
-                          : "📊 med"}
+                            ? ".. slow"
+                            : "-- med"}
                       </span>
                       <span
                         style={{
@@ -399,7 +399,7 @@ export default function Dashboard() {
                           fontSize: "11px",
                         }}
                       >
-                        → {getReasonLabel(entry.result?.reason)}
+                        {getReasonLabel(entry.result?.reason)}
                       </span>
                     </div>
                   ))}

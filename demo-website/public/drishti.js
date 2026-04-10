@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════╗
  * ║          Drishti SDK — drishti.js v2.0           ║
  * ║   Plug-and-play AI marketing optimization        ║
- * ║   Now with live webcam emotion detection! 🎭     ║
+ * ║   Now with live webcam emotion detection!        ║
  * ╚══════════════════════════════════════════════════╝
  *
  * Usage:
@@ -149,7 +149,7 @@
   }
 
   // ══════════════════════════════════════════════════
-  // 🎭 WEBCAM EMOTION DETECTION
+  // WEBCAM EMOTION DETECTION
   // ══════════════════════════════════════════════════
 
   async function startWebcam() {
@@ -187,7 +187,7 @@
       state.webcamCanvas = canvas;
       state.webcamActive = true;
 
-      log("📷 Webcam started");
+      log("Webcam started");
 
       // Start periodic emotion capture
       const config = getConfig();
@@ -196,7 +196,7 @@
 
       return true;
     } catch (err) {
-      log("📷 Webcam error:", err.message);
+      log("Webcam error:", err.message);
       state.webcamActive = false;
       return false;
     }
@@ -225,7 +225,7 @@
 
     state.webcamActive = false;
     state.lastFrame = null;
-    log("📷 Webcam stopped");
+    log("Webcam stopped");
   }
 
   async function captureEmotion() {
@@ -239,7 +239,7 @@
       const frameData = state.webcamCanvas.toDataURL("image/jpeg", 0.7);
       state.lastFrame = frameData;
 
-      log("📸 Frame captured for emotion detection");
+      log("Frame captured for emotion detection");
 
       // Send frame to emotion detection endpoint
       const config = getConfig();
@@ -253,7 +253,7 @@
         const data = await response.json();
         state.emotion = data.emotion || "neutral";
         state.emotionSource = "webcam";
-        log("🎭 Emotion detected:", state.emotion);
+        log("Emotion detected:", state.emotion);
 
         // Dispatch custom event for UI updates
         window.dispatchEvent(
@@ -267,7 +267,7 @@
         );
       }
     } catch (err) {
-      log("🎭 Emotion detection error:", err.message);
+      log("Emotion detection error:", err.message);
     }
   }
 

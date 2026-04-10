@@ -6,16 +6,16 @@ from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
-# 🔑 Load environment variables
+# Load environment variables
 load_dotenv()
 
-# 🔑 Initialize LLM (key from .env, NEVER hardcoded)
+# Initialize LLM (key from .env, NEVER hardcoded)
 llm = ChatGroq(
     groq_api_key=os.environ.get("GROQ_API_KEY"),
     model_name="llama-3.1-8b-instant"
 )
 
-# 🧠 Prompt Template (headline + CTA generation)
+# Prompt Template (headline + CTA generation)
 prompt = ChatPromptTemplate.from_template("""
 User type: {user_type}
 User emotion: {emotion}
@@ -41,7 +41,7 @@ Return ONLY valid JSON:
 }}
 """)
 
-# 🧠 Smart Decision Prompt (LLM reasons about everything)
+# Smart Decision Prompt (LLM reasons about everything)
 smart_prompt = ChatPromptTemplate.from_template("""
 You are Drishti, an AI marketing optimization engine. Analyze the user's behavior and decide what to do.
 
@@ -83,34 +83,34 @@ Return ONLY valid JSON:
 }}
 """)
 
-# ⚡ Cache
+# Cache
 cache = {}
 
 
-# 🛡️ Fallback
+# Fallback
 def fallback_text(user_type, emotion):
 
     if emotion == "love":
         return {
-            "headline": "This is made for you ❤️",
+            "headline": "This is made for you",
             "cta": "Grab now"
         }
 
     if emotion == "confused":
         return {
-            "headline": "Let us guide you step by step 🤝",
+            "headline": "Let us guide you step by step",
             "cta": "Start now"
         }
 
     if emotion == "bored":
         return {
-            "headline": "Let's make this interesting 🎯",
+            "headline": "Let's make this interesting",
             "cta": "Try it"
         }
 
     if user_type == "low_attention":
         return {
-            "headline": "No time? Start instantly ⚡",
+            "headline": "No time? Start instantly",
             "cta": "Try now"
         }
 
@@ -122,7 +122,7 @@ def fallback_text(user_type, emotion):
 
     if user_type == "returning_user":
         return {
-            "headline": "Welcome back! 🎉",
+            "headline": "Welcome back!",
             "cta": "Continue"
         }
 
@@ -132,7 +132,7 @@ def fallback_text(user_type, emotion):
     }
 
 
-# 🛡️ Smart fallback (includes full decision fields)
+# Smart fallback (includes full decision fields)
 def fallback_smart(user_type, emotion):
     base = fallback_text(user_type, emotion)
     return {
@@ -144,7 +144,7 @@ def fallback_smart(user_type, emotion):
     }
 
 
-# 🤖 AI Call (basic: headline + CTA)
+# AI Call (basic: headline + CTA)
 def call_ai(user_type, emotion, page="home", section="hero"):
 
     chain = prompt | llm
@@ -158,7 +158,7 @@ def call_ai(user_type, emotion, page="home", section="hero"):
 
     text = response.content.strip()
 
-    # 🛠️ Clean markdown if exists
+    # Clean markdown if exists
     if text.startswith("```"):
         text = text.replace("```json", "").replace("```", "").strip()
 
@@ -168,7 +168,7 @@ def call_ai(user_type, emotion, page="home", section="hero"):
         return fallback_text(user_type, emotion)
 
 
-# 🧠 Smart AI Call (full decision with reasoning)
+# Smart AI Call (full decision with reasoning)
 def call_smart_ai(user_type, emotion, scroll_speed, time_on_page, clicks, page="home", section="hero"):
 
     chain = smart_prompt | llm
@@ -185,7 +185,7 @@ def call_smart_ai(user_type, emotion, scroll_speed, time_on_page, clicks, page="
 
     text = response.content.strip()
 
-    # 🛠️ Clean markdown if exists
+    # Clean markdown if exists
     if text.startswith("```"):
         text = text.replace("```json", "").replace("```", "").strip()
 
@@ -201,12 +201,12 @@ def call_smart_ai(user_type, emotion, scroll_speed, time_on_page, clicks, page="
         return fallback_smart(user_type, emotion)
 
 
-# 🚀 Main function (basic)
+# Main function (basic)
 def generate_text(user_type, emotion, page="home", section="hero"):
 
     key = f"{user_type}_{emotion}_{page}_{section}"
 
-    # ⚡ cache
+    # cache
     if key in cache:
         return cache[key]
 
@@ -220,12 +220,12 @@ def generate_text(user_type, emotion, page="home", section="hero"):
         return fallback_text(user_type, emotion)
 
 
-# 🧠 Smart Decision function (LLM-powered full decision)
+# Smart Decision function (LLM-powered full decision)
 def generate_smart_decision(user_type, emotion, scroll_speed, time_on_page, clicks, page="home", section="hero"):
 
     key = f"smart_{user_type}_{emotion}_{scroll_speed}_{time_on_page}_{clicks}_{page}_{section}"
 
-    # ⚡ cache
+    # cache
     if key in cache:
         return cache[key]
 
@@ -242,7 +242,7 @@ def generate_smart_decision(user_type, emotion, scroll_speed, time_on_page, clic
         return fallback_smart(user_type, emotion)
 
 
-# 🧪 Test
+# Test
 if __name__ == "__main__":
 
     test_cases = [

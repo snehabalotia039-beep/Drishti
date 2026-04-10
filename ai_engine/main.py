@@ -11,13 +11,13 @@ from decision import decide_action
 from ai_generator import generate_text, generate_smart_decision
 from emotion import detect_from_webcam, detect_from_base64
 
-# 🔑 Load .env
+# Load .env
 load_dotenv()
 
-app = FastAPI(title="Drishti AI Engine 🚀")
+app = FastAPI(title="Drishti AI Engine")
 
 # ================================
-# 🌐 CORS (allow Express backend)
+# CORS (allow Express backend)
 # ================================
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +28,7 @@ app.add_middleware(
 
 
 # ================================
-# 🧩 INPUT MODELS
+# INPUT MODELS
 # ================================
 class Behavior(BaseModel):
     scrollSpeed: str
@@ -74,14 +74,14 @@ class GenerateInput(BaseModel):
 
 
 # ================================
-# 📊 CONFIDENCE FUNCTION
+# CONFIDENCE FUNCTION
 # ================================
 def calculate_confidence(user_type, emotion, time_spent, clicks):
 
-    # 🔹 Behavior score (0–1)
+    # Behavior score (0-1)
     behavior_score = min(1.0, (time_spent / 30) + (clicks * 0.2))
 
-    # 🔹 Emotion strength
+    # Emotion strength
     emotion_map = {
         "love": 0.9,
         "happy": 0.8,
@@ -91,7 +91,7 @@ def calculate_confidence(user_type, emotion, time_spent, clicks):
     }
     emotion_score = emotion_map.get(emotion, 0.5)
 
-    # 🔹 Rule confidence
+    # Rule confidence
     rule_map = {
         "engaged_user": 0.9,
         "returning_user": 0.85,
@@ -100,19 +100,19 @@ def calculate_confidence(user_type, emotion, time_spent, clicks):
     }
     rule_score = rule_map.get(user_type, 0.6)
 
-    # 🎯 Final confidence
+    # Final confidence
     confidence = (behavior_score * 0.5) + (emotion_score * 0.3) + (rule_score * 0.2)
 
     return round(min(confidence, 1.0), 2)
 
 
 # ================================
-# 🏠 ROOT
+# ROOT
 # ================================
 @app.get("/")
 def home():
     return {
-        "message": "Drishti AI Engine Running 🚀",
+        "message": "Drishti AI Engine Running",
         "features": [
             "Behavior Analysis",
             "Webcam Emotion Detection (base64)",
@@ -131,7 +131,7 @@ def home():
 
 
 # ================================
-# 🎭 EMOTION DETECTION (base64)
+# EMOTION DETECTION (base64)
 # ================================
 @app.post("/detect-emotion")
 def detect_emotion(data: EmotionInput):
@@ -139,7 +139,7 @@ def detect_emotion(data: EmotionInput):
     Receives a base64-encoded webcam frame from the browser SDK.
     Returns the detected emotion using DeepFace.
     """
-    print("🎭 Received webcam frame for emotion detection")
+    print("[emotion] Received webcam frame for emotion detection")
 
     result = detect_from_base64(data.frame)
 
@@ -152,7 +152,7 @@ def detect_emotion(data: EmotionInput):
 
 
 # ================================
-# 🧠 SMART DECIDE (LLM + Rules)
+# SMART DECIDE (LLM + Rules)
 # ================================
 @app.post("/smart-decide")
 def smart_decide(data: SmartInput):
@@ -172,7 +172,7 @@ def smart_decide(data: SmartInput):
     emotion_source = "manual"
 
     if data.frame:
-        print("📷 Detecting emotion from webcam frame...")
+        print("[webcam] Detecting emotion from webcam frame...")
         emotion_result = detect_from_base64(data.frame)
         emotion = emotion_result["mapped_emotion"]
         emotion_source = "webcam"
@@ -241,7 +241,7 @@ def smart_decide(data: SmartInput):
 
 
 # ================================
-# 🎥 OPTIONAL: TEST WEBCAM (local)
+# OPTIONAL: TEST WEBCAM (local)
 # ================================
 @app.get("/webcam-test")
 def webcam_test():
@@ -253,14 +253,14 @@ def webcam_test():
 
 
 # ================================
-# 🧠 FULL ANALYZE ENDPOINT
+# FULL ANALYZE ENDPOINT
 # ================================
 @app.post("/analyze")
 def analyze(data: ToolInput):
 
     # ── Step 1: Emotion ──
     if data.useWebcam:
-        print("📷 Using Webcam Emotion Detection")
+        print("[webcam] Using webcam emotion detection")
         emotion = detect_from_webcam(duration=5)
     else:
         emotion = data.emotion
@@ -311,7 +311,7 @@ def analyze(data: ToolInput):
 
 
 # ================================
-# 🤖 SIMPLIFIED GENERATE ENDPOINT
+# SIMPLIFIED GENERATE ENDPOINT
 # (Called by Express backend)
 # ================================
 @app.post("/generate")

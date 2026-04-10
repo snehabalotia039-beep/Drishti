@@ -78,7 +78,7 @@ export default function Hero() {
               ))}
             </div>
             <div className="text-sm text-stone-500">
-              <span className="font-semibold text-stone-700">2,400+</span>{" "}
+              <span className="font-semibold text-stone-700">20+</span>{" "}
               happy customers
             </div>
           </div>

@@ -24,19 +24,19 @@ def classify_user(data):
     is_returning = data.get("is_returning", False)
     emotion = str(data.get("emotion", "neutral")).lower()
 
-    # 🧠 Priority 1: Returning user
+    # Priority 1: Returning user
     if is_returning:
         return "returning_user", emotion
 
-    # ⚡ Low attention user
+    # Low attention user
     if scroll_speed == "fast" and time_on_page < 15:
         return "low_attention", emotion
 
-    # 🔍 Engaged user
+    # Engaged user
     if time_on_page > 30 and clicks >= 2:
         return "engaged_user", emotion
 
-    # 📊 Default
+    # Default
     return "normal_user", emotion
 
 
@@ -50,7 +50,7 @@ def engagement_score(data):
     return time_on_page + (clicks * 5)
 
 
-# 🧪 Local testing
+# Local testing
 if __name__ == "__main__":
 
     sample_users = [

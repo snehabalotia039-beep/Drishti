@@ -10,67 +10,67 @@ def decide_action(user_type, emotion, time_on_page=0):
         time_on_page (int)
 
     Output:
-        dict → UI decisions
+        dict - UI decisions
     """
 
     # Popup trigger logic
     show_popup = time_on_page > 20
 
-    # ❤️ LOVE → highest priority (conversion mode)
+    # LOVE - highest priority (conversion mode)
     if emotion == "love":
         return {
             "content_type": "offer",
-            "cta": "You’ll love this ❤️",
+            "cta": "You’ll love this",
             "show_popup": True,
             "priority": "high_conversion"
         }
 
-    # 🤝 Confused → guide user
+    # Confused - guide user
     if emotion == "confused":
         return {
             "content_type": "guided",
-            "cta": "Let us help you 🤝",
+            "cta": "Let us help you",
             "show_popup": True,
             "priority": "assist"
         }
 
-    # 🎯 Bored → make it engaging
+    # Bored - make it engaging
     if emotion == "bored":
         return {
             "content_type": "interactive",
-            "cta": "Let’s make this fun 🎯",
+            "cta": "Let’s make this fun",
             "show_popup": False,
             "priority": "engage"
         }
 
-    # ⚡ Low attention
+    # Low attention
     if user_type == "low_attention":
         return {
             "content_type": "short",
-            "cta": "Quick results ⚡",
+            "cta": "Quick results",
             "show_popup": show_popup,
             "priority": "retain"
         }
 
-    # 🔍 Engaged user
+    # Engaged user
     if user_type == "engaged_user":
         return {
             "content_type": "detailed",
-            "cta": "Explore more 🔍",
+            "cta": "Explore more",
             "show_popup": show_popup,
             "priority": "inform"
         }
 
-    # 🔁 Returning user
+    # Returning user
     if user_type == "returning_user":
         return {
             "content_type": "offer",
-            "cta": "Welcome back! 🎉",
+            "cta": "Welcome back!",
             "show_popup": show_popup,
             "priority": "convert"
         }
 
-    # 📊 Default
+    # Default
     return {
         "content_type": "normal",
         "cta": "Get started",
@@ -79,7 +79,7 @@ def decide_action(user_type, emotion, time_on_page=0):
     }
 
 
-# 🧪 Local testing
+# Local testing
 if __name__ == "__main__":
 
     test_cases = [

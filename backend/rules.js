@@ -26,7 +26,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "Wait — you haven't seen the best part yet!",
-      cta: "Show Me ⚡",
+      cta: "Show Me",
       reason: "bored_user_engage",
     };
   }
@@ -35,7 +35,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "Let us guide you — it's simpler than you think",
-      cta: "Start Here 🤝",
+      cta: "Start Here",
       reason: "confused_user_guide",
     };
   }
@@ -44,7 +44,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "You've got great taste — this one's for you",
-      cta: "Grab It Now ❤️",
+      cta: "Grab It Now",
       reason: "positive_emotion_convert",
     };
   }
@@ -58,7 +58,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "Still looking? Grab this now!",
-      cta: "Buy Now ⚡",
+      cta: "Buy Now",
       reason: "low_engagement_fast_scroll",
     };
   }
@@ -68,7 +68,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "Quick picks — our customers' favorites",
-      cta: "See Top Picks 🔥",
+      cta: "See Top Picks",
       reason: "scanning_user_redirect",
     };
   }
@@ -78,7 +78,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "You've been here a while — here's a deal just for you",
-      cta: "Claim Offer 🎁",
+      cta: "Claim Offer",
       reason: "long_session_offer",
     };
   }
@@ -88,7 +88,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "Take your time — here's everything you need",
-      cta: "Learn More 📖",
+      cta: "Learn More",
       reason: "high_engagement_slow_read",
     };
   }
@@ -98,7 +98,7 @@ function analyzeRules(data) {
     return {
       change: true,
       headline: "Not sure? Let us help you decide",
-      cta: "Get Help 🤝",
+      cta: "Get Help",
       reason: "low_interaction_assist",
     };
   }

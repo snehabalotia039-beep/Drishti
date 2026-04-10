@@ -9,7 +9,7 @@ from PIL import Image
 from collections import Counter
 
 
-# 🔄 Map raw emotions → system emotions
+# Map raw emotions to system emotions
 def map_emotion(e):
 
     e = str(e).lower()
@@ -26,7 +26,7 @@ def map_emotion(e):
     return "neutral"
 
 
-# 📸 Detect emotion from IMAGE
+# Detect emotion from IMAGE
 def detect_from_image(image_path):
 
     try:
@@ -44,7 +44,7 @@ def detect_from_image(image_path):
         return "neutral"
 
 
-# 📷 Detect emotion from BASE64 frame (from browser webcam)
+# Detect emotion from BASE64 frame (from browser webcam)
 def detect_from_base64(image_b64):
     """
     Takes a base64-encoded image string (from browser's canvas.toDataURL()),
@@ -80,7 +80,7 @@ def detect_from_base64(image_b64):
 
         mapped = map_emotion(raw_emotion)
 
-        print(f"🎭 Emotion detected: {raw_emotion} → {mapped}")
+        print(f"[emotion] Detected: {raw_emotion} -> {mapped}")
         print(f"   Scores: {all_emotions}")
 
         return {
@@ -98,7 +98,7 @@ def detect_from_base64(image_b64):
         }
 
 
-# 🎥 Detect emotion from VIDEO
+# Detect emotion from VIDEO
 def detect_from_video(video_path, frame_skip=10, max_frames=100):
 
     cap = cv2.VideoCapture(video_path)
@@ -147,7 +147,7 @@ def detect_from_video(video_path, frame_skip=10, max_frames=100):
     return map_emotion(final)
 
 
-# 📷 Detect emotion from WEBCAM (5–10 sec capture)
+# Detect emotion from WEBCAM (5-10 sec capture)
 def detect_from_webcam(duration=5, frame_skip=5):
 
     cap = cv2.VideoCapture(0)
@@ -159,14 +159,14 @@ def detect_from_webcam(duration=5, frame_skip=5):
     emotions = []
     frame_count = 0
 
-    # 🎥 Get FPS
+    # Get FPS
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     if fps == 0:
         fps = 10  # fallback
 
     max_frames = duration * fps
 
-    print("📷 Capturing webcam for emotion detection...")
+    print("[webcam] Capturing webcam for emotion detection...")
 
     while frame_count < max_frames:
         ret, frame = cap.read()
@@ -205,7 +205,7 @@ def detect_from_webcam(duration=5, frame_skip=5):
     return map_emotion(final)
 
 
-# 🧪 Testing
+# Testing
 if __name__ == "__main__":
 
     print("Testing emotion detection...")
