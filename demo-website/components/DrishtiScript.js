@@ -11,12 +11,15 @@ export default function DrishtiScript() {
           window.DrishtiConfig = {
             apiKey: "demo123",
             apiUrl: "http://localhost:5000/analyze",
+            emotionUrl: "http://localhost:5000/detect-emotion",
             selectors: {
               headline: "#headline",
               cta: "#cta"
             },
             interval: 5000,
             enabled: false,
+            emotionDetection: false,
+            emotionInterval: 10000,
             debug: true
           };
         `}

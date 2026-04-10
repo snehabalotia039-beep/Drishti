@@ -1,9 +1,39 @@
-node_modules/
+# ── Environment & Secrets ──
 .env
 .env.*
-.DS_Store
+.env.local
+.env.*.local
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# ── Node.js ──
+node_modules/
+npm-debug.log*
+*.log
+
+# ── Next.js ──
 .next/
 out/
-build/
 coverage/
-*.log
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── IDE ──
+.vscode/
+.idea/
+*.code-workspace
+
+# ── Gemini ──
+.gemini/

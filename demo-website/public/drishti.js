@@ -1,7 +1,8 @@
 /**
  * ╔══════════════════════════════════════════════════╗
- * ║          Drishti SDK — drishti.js v1.0           ║
+ * ║          Drishti SDK — drishti.js v2.0           ║
  * ║   Plug-and-play AI marketing optimization        ║
+ * ║   Now with live webcam emotion detection! 🎭     ║
  * ╚══════════════════════════════════════════════════╝
  *
  * Usage:
@@ -9,9 +10,12 @@
  *     window.DrishtiConfig = {
  *       apiKey: "demo123",
  *       apiUrl: "http://localhost:5000/analyze",
+ *       emotionUrl: "http://localhost:5000/detect-emotion",
  *       selectors: { headline: "#headline", cta: "#cta" },
  *       interval: 5000,
  *       enabled: true,
+ *       emotionDetection: false,
+ *       emotionInterval: 10000,
  *       debug: false
  *     };
  *   </script>
@@ -25,12 +29,15 @@
   const DEFAULTS = {
     apiKey: "demo123",
     apiUrl: "http://localhost:5000/analyze",
+    emotionUrl: "http://localhost:5000/detect-emotion",
     selectors: {
       headline: "#headline",
       cta: "#cta",
     },
     interval: 5000,
     enabled: true,
+    emotionDetection: false,
+    emotionInterval: 10000,  // capture emotion every 10 seconds
     debug: false,
   };
 
@@ -66,6 +73,16 @@
     intervalId: null,
     timeIntervalId: null,
     isActive: false,
+
+    // Webcam state
+    emotion: "neutral",
+    emotionSource: "none",
+    webcamStream: null,
+    webcamVideo: null,
+    webcamCanvas: null,
+    webcamIntervalId: null,
+    webcamActive: false,
+    lastFrame: null,     // last captured base64 frame
   };
 
   // ── Logging helper ──────────────────────────────
@@ -131,6 +148,129 @@
     log("Click detected. Total:", state.clicks);
   }
 
+  // ══════════════════════════════════════════════════
+  // 🎭 WEBCAM EMOTION DETECTION
+  // ══════════════════════════════════════════════════
+
+  async function startWebcam() {
+    if (state.webcamActive) return true;
+
+    try {
+      // Request camera — browser shows native permission prompt
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: "user" },
+        audio: false,
+      });
+
+      // Create hidden video element
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      video.setAttribute("playsinline", "");
+      video.setAttribute("autoplay", "");
+      video.style.position = "fixed";
+      video.style.top = "-9999px";
+      video.style.left = "-9999px";
+      video.style.width = "320px";
+      video.style.height = "240px";
+      document.body.appendChild(video);
+      await video.play();
+
+      // Create hidden canvas for frame capture
+      const canvas = document.createElement("canvas");
+      canvas.width = 320;
+      canvas.height = 240;
+      canvas.style.display = "none";
+      document.body.appendChild(canvas);
+
+      state.webcamStream = stream;
+      state.webcamVideo = video;
+      state.webcamCanvas = canvas;
+      state.webcamActive = true;
+
+      log("📷 Webcam started");
+
+      // Start periodic emotion capture
+      const config = getConfig();
+      captureEmotion(); // capture immediately
+      state.webcamIntervalId = setInterval(captureEmotion, config.emotionInterval);
+
+      return true;
+    } catch (err) {
+      log("📷 Webcam error:", err.message);
+      state.webcamActive = false;
+      return false;
+    }
+  }
+
+  function stopWebcam() {
+    if (state.webcamStream) {
+      state.webcamStream.getTracks().forEach((track) => track.stop());
+      state.webcamStream = null;
+    }
+
+    if (state.webcamVideo) {
+      state.webcamVideo.remove();
+      state.webcamVideo = null;
+    }
+
+    if (state.webcamCanvas) {
+      state.webcamCanvas.remove();
+      state.webcamCanvas = null;
+    }
+
+    if (state.webcamIntervalId) {
+      clearInterval(state.webcamIntervalId);
+      state.webcamIntervalId = null;
+    }
+
+    state.webcamActive = false;
+    state.lastFrame = null;
+    log("📷 Webcam stopped");
+  }
+
+  async function captureEmotion() {
+    if (!state.webcamActive || !state.webcamVideo || !state.webcamCanvas) return;
+
+    try {
+      const ctx = state.webcamCanvas.getContext("2d");
+      ctx.drawImage(state.webcamVideo, 0, 0, 320, 240);
+
+      // Convert to base64 JPEG (smaller than PNG)
+      const frameData = state.webcamCanvas.toDataURL("image/jpeg", 0.7);
+      state.lastFrame = frameData;
+
+      log("📸 Frame captured for emotion detection");
+
+      // Send frame to emotion detection endpoint
+      const config = getConfig();
+      const response = await fetch(config.emotionUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ frame: frameData }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        state.emotion = data.emotion || "neutral";
+        state.emotionSource = "webcam";
+        log("🎭 Emotion detected:", state.emotion);
+
+        // Dispatch custom event for UI updates
+        window.dispatchEvent(
+          new CustomEvent("drishti-emotion", {
+            detail: {
+              emotion: state.emotion,
+              raw: data.raw_emotion,
+              scores: data.scores,
+            },
+          })
+        );
+      }
+    } catch (err) {
+      log("🎭 Emotion detection error:", err.message);
+    }
+  }
+
   // ── DOM update with smooth transition ───────────
   function updateDOM(data) {
     if (!data || !data.change) {
@@ -156,7 +296,15 @@
       }
     }
 
-    log("DOM updated →", data.reason);
+    // Update emotion in state if returned from server
+    if (data.emotion) {
+      state.emotion = data.emotion;
+      if (data.emotionSource) {
+        state.emotionSource = data.emotionSource;
+      }
+    }
+
+    log("DOM updated →", data.reason, "| emotion:", data.emotion, "| confidence:", data.confidence);
   }
 
   function smoothUpdate(element, newContent, type) {
@@ -225,10 +373,20 @@
       scrollSpeed: state.scrollSpeed,
       timeSpent: state.timeSpent,
       clicks: state.clicks,
-      emotion: "neutral", // Phase 5: will be set by emotion detection
+      emotion: state.emotion,
     };
 
-    log("Sending →", payload);
+    // Include webcam frame if available (for server-side emotion detection)
+    if (state.webcamActive && state.lastFrame) {
+      payload.frame = state.lastFrame;
+      // Clear the frame so we don't send the same one repeatedly
+      state.lastFrame = null;
+    }
+
+    log("Sending →", {
+      ...payload,
+      frame: payload.frame ? "[base64 frame]" : undefined,
+    });
 
     try {
       const response = await fetch(config.apiUrl, {
@@ -274,6 +432,11 @@
     // Send initial data after a short delay
     setTimeout(sendData, 2000);
 
+    // Start webcam if emotion detection is enabled
+    if (config.emotionDetection) {
+      startWebcam();
+    }
+
     log("Started tracking (interval: " + config.interval + "ms)");
   }
 
@@ -294,6 +457,9 @@
       state.timeIntervalId = null;
     }
 
+    // Stop webcam
+    stopWebcam();
+
     log("Stopped tracking");
   }
 
@@ -303,6 +469,9 @@
     state.scrollPositions = [];
     scrollDeltas = [];
     state.scrollSpeed = "medium";
+    state.emotion = "neutral";
+    state.emotionSource = "none";
+    state.lastFrame = null;
     log("State reset");
   }
 
@@ -312,23 +481,49 @@
     stop: stop,
     reset: reset,
     getState: function () {
-      return { ...state, scrollSpeed: getScrollSpeed() };
+      return {
+        ...state,
+        scrollSpeed: getScrollSpeed(),
+        webcamStream: undefined,     // don't expose stream object
+        webcamVideo: undefined,
+        webcamCanvas: undefined,
+      };
     },
     setEmotion: function (emotion) {
       // Manual emotion override (for demo)
       state.emotion = emotion;
+      state.emotionSource = "manual";
       log("Emotion set to:", emotion);
     },
     isActive: function () {
       return state.isActive;
     },
-    version: "1.0.0",
+
+    // Webcam controls
+    enableWebcam: async function () {
+      const success = await startWebcam();
+      return success;
+    },
+    disableWebcam: function () {
+      stopWebcam();
+    },
+    isWebcamActive: function () {
+      return state.webcamActive;
+    },
+    getEmotion: function () {
+      return {
+        emotion: state.emotion,
+        source: state.emotionSource,
+      };
+    },
+
+    version: "2.0.0",
   };
 
   // ── Auto-start if enabled ──────────────────────
   function init() {
     const config = getConfig();
-    log("Drishti SDK v1.0.0 initialized");
+    log("Drishti SDK v2.0.0 initialized");
     log("Config:", config);
 
     if (config.enabled) {
