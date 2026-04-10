@@ -59,7 +59,7 @@ app.get("/", (req, res) => {
 // {
 //   change, headline, cta, reason
 // }
-app.post("/analyze", (req, res) => {
+app.post("/analyze", async (req, res) => {
   const {
     apiKey,
     sessionId,
@@ -88,15 +88,51 @@ app.post("/analyze", (req, res) => {
     });
   }
 
-  // ── Run rule-based analysis ──
-  const result = analyzeRules({
+  const behaviorData = {
     scrollSpeed: scrollSpeed || "medium",
     timeSpent: timeSpent || 0,
     clicks: clicks || 0,
     emotion: emotion || "neutral",
     page: page || "home",
     section: section || "hero",
-  });
+  };
+
+  // ── Run rule-based analysis (always runs) ──
+  const ruleResult = analyzeRules(behaviorData);
+
+  // ── Try AI service for enhanced content ──
+  let result = ruleResult;
+  const aiUrl = process.env.AI_SERVICE_URL;
+
+  if (aiUrl && ruleResult.change) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+
+      const aiResponse = await fetch(`${aiUrl}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(behaviorData),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (aiResponse.ok) {
+        const aiData = await aiResponse.json();
+        result = {
+          ...ruleResult,
+          headline: aiData.headline || ruleResult.headline,
+          cta: aiData.cta || ruleResult.cta,
+          source: "ai",
+        };
+        console.log("  AI enhanced ✨");
+      }
+    } catch (err) {
+      // AI unavailable — fall back to rules silently
+      console.log("  AI unavailable, using rules");
+    }
+  }
 
   // ── Store session data (for dashboard) ──
   const sessionData = {
