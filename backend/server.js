@@ -15,6 +15,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { analyzeRules } = require("./rules");
+const { connectDB } = require("./db");
 const { authRouter } = require("./auth");
 const keysRouter = require("./keys");
 const { validateApiKey } = require("./rateLimit");
@@ -298,16 +299,22 @@ app.get("/sessions", (req, res) => {
   });
 });
 
-// ── Start server ───────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\nDrishti Decision Engine v3.0 running on http://localhost:${PORT}`);
-  console.log(`   POST /auth/register  -- Create account`);
-  console.log(`   POST /auth/login     -- Login, get JWT`);
-  console.log(`   GET  /auth/me        -- Profile (JWT required)`);
-  console.log(`   POST /keys           -- Generate API key (JWT required)`);
-  console.log(`   GET  /keys           -- List API keys (JWT required)`);
-  console.log(`   POST /analyze        -- Behavior analysis + AI`);
-  console.log(`   POST /detect-emotion -- Webcam emotion proxy`);
-  console.log(`   GET  /sessions       -- Dashboard data`);
-  console.log(`   AI Service:          ${process.env.AI_SERVICE_URL || "not configured"}\n`);
-});
+// ── Start server (connect to MongoDB first) ────
+async function start() {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`\nDrishti Decision Engine v3.0 running on http://localhost:${PORT}`);
+    console.log(`   POST /auth/register  -- Create account`);
+    console.log(`   POST /auth/login     -- Login, get JWT`);
+    console.log(`   GET  /auth/me        -- Profile (JWT required)`);
+    console.log(`   POST /keys           -- Generate API key (JWT required)`);
+    console.log(`   GET  /keys           -- List API keys (JWT required)`);
+    console.log(`   POST /analyze        -- Behavior analysis + AI`);
+    console.log(`   POST /detect-emotion -- Webcam emotion proxy`);
+    console.log(`   GET  /sessions       -- Dashboard data`);
+    console.log(`   AI Service:          ${process.env.AI_SERVICE_URL || "not configured"}\n`);
+  });
+}
+
+start();

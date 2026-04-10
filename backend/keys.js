@@ -1,5 +1,5 @@
 /**
- * keys.js -- API Key Management Routes for Drishti
+ * keys.js -- API Key Management Routes for Drishti (MongoDB)
  *
  * All routes require JWT authentication.
  *
@@ -11,7 +11,7 @@
 
 const express = require("express");
 const crypto = require("crypto");
-const db = require("./db");
+const { ApiKey, UsageLog } = require("./db");
 const { authenticate } = require("./auth");
 
 const router = express.Router();
@@ -26,133 +26,138 @@ function generateApiKey() {
 }
 
 // ── POST /keys -- Generate new API key ─────────
-router.post("/", (req, res) => {
-  const { label } = req.body;
-  const userId = req.user.id;
+router.post("/", async (req, res) => {
+  try {
+    const { label } = req.body;
+    const userId = req.user.id;
 
-  // Limit: max 5 keys per user
-  const keyCount = db.prepare("SELECT COUNT(*) as count FROM api_keys WHERE user_id = ?")
-    .get(userId).count;
+    // Limit: max 5 keys per user
+    const keyCount = await ApiKey.countDocuments({ user_id: userId });
+    if (keyCount >= 5) {
+      return res.status(400).json({
+        error: "Maximum 5 API keys per account. Revoke an existing key first.",
+      });
+    }
 
-  if (keyCount >= 5) {
-    return res.status(400).json({
-      error: "Maximum 5 API keys per account. Revoke an existing key first.",
-    });
-  }
+    const key = generateApiKey();
+    const keyLabel = label || "Default";
 
-  const key = generateApiKey();
-  const keyLabel = label || "Default";
-
-  const result = db.prepare(
-    "INSERT INTO api_keys (user_id, key, label) VALUES (?, ?, ?)"
-  ).run(userId, key, keyLabel);
-
-  console.log(`[keys] New API key generated for user ${userId}: ${key.substring(0, 12)}...`);
-
-  return res.status(201).json({
-    message: "API key created",
-    apiKey: {
-      id: result.lastInsertRowid,
+    const apiKey = await ApiKey.create({
+      user_id: userId,
       key,
       label: keyLabel,
-      requestsCount: 0,
-      requestsLimit: 1000,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    },
-  });
+    });
+
+    console.log(`[keys] New API key generated for user ${userId}: ${key.substring(0, 12)}...`);
+
+    return res.status(201).json({
+      message: "API key created",
+      apiKey: {
+        id: apiKey._id,
+        key,
+        label: keyLabel,
+        requestsCount: 0,
+        requestsLimit: 1000,
+        isActive: true,
+        createdAt: apiKey.created_at,
+      },
+    });
+  } catch (err) {
+    console.error("[keys] Create error:", err.message);
+    return res.status(500).json({ error: "Server error" });
+  }
 });
 
 // ── GET /keys -- List user's API keys ──────────
-router.get("/", (req, res) => {
-  const userId = req.user.id;
+router.get("/", async (req, res) => {
+  try {
+    const userId = req.user.id;
 
-  const keys = db.prepare(`
-    SELECT id, key, label, requests_count, requests_limit, is_active, created_at
-    FROM api_keys
-    WHERE user_id = ?
-    ORDER BY created_at DESC
-  `).all(userId);
+    const keys = await ApiKey.find({ user_id: userId }).sort({ created_at: -1 });
 
-  const formatted = keys.map((k) => ({
-    id: k.id,
-    key: k.key,
-    label: k.label,
-    requestsCount: k.requests_count,
-    requestsLimit: k.requests_limit,
-    isActive: Boolean(k.is_active),
-    createdAt: k.created_at,
-    // Mask the key for display (show first 8 + last 4 chars)
-    maskedKey: k.key.substring(0, 8) + "..." + k.key.substring(k.key.length - 4),
-  }));
+    const formatted = keys.map((k) => ({
+      id: k._id,
+      key: k.key,
+      label: k.label,
+      requestsCount: k.requests_count,
+      requestsLimit: k.requests_limit,
+      isActive: k.is_active,
+      createdAt: k.created_at,
+      maskedKey: k.key.substring(0, 8) + "..." + k.key.substring(k.key.length - 4),
+    }));
 
-  return res.json({
-    total: formatted.length,
-    keys: formatted,
-  });
+    return res.json({
+      total: formatted.length,
+      keys: formatted,
+    });
+  } catch (err) {
+    console.error("[keys] List error:", err.message);
+    return res.status(500).json({ error: "Server error" });
+  }
 });
 
 // ── DELETE /keys/:id -- Revoke an API key ──────
-router.delete("/:id", (req, res) => {
-  const keyId = req.params.id;
-  const userId = req.user.id;
+router.delete("/:id", async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
 
-  // Verify the key belongs to this user
-  const key = db.prepare("SELECT * FROM api_keys WHERE id = ? AND user_id = ?")
-    .get(keyId, userId);
+    const key = await ApiKey.findOne({ _id: keyId, user_id: userId });
+    if (!key) {
+      return res.status(404).json({ error: "API key not found" });
+    }
 
-  if (!key) {
-    return res.status(404).json({ error: "API key not found" });
+    key.is_active = false;
+    await key.save();
+
+    console.log(`[keys] API key revoked: ${key.key.substring(0, 12)}...`);
+
+    return res.json({ message: "API key revoked successfully" });
+  } catch (err) {
+    console.error("[keys] Revoke error:", err.message);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  db.prepare("UPDATE api_keys SET is_active = 0 WHERE id = ?").run(keyId);
-
-  console.log(`[keys] API key revoked: ${key.key.substring(0, 12)}...`);
-
-  return res.json({ message: "API key revoked successfully" });
 });
 
 // ── GET /keys/:id/usage -- Usage details ───────
-router.get("/:id/usage", (req, res) => {
-  const keyId = req.params.id;
-  const userId = req.user.id;
+router.get("/:id/usage", async (req, res) => {
+  try {
+    const keyId = req.params.id;
+    const userId = req.user.id;
 
-  // Verify the key belongs to this user
-  const key = db.prepare("SELECT * FROM api_keys WHERE id = ? AND user_id = ?")
-    .get(keyId, userId);
+    const key = await ApiKey.findOne({ _id: keyId, user_id: userId });
+    if (!key) {
+      return res.status(404).json({ error: "API key not found" });
+    }
 
-  if (!key) {
-    return res.status(404).json({ error: "API key not found" });
+    // Get recent usage logs (last 100)
+    const logs = await UsageLog.find({ api_key_id: keyId })
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .select("endpoint timestamp");
+
+    // Get per-endpoint breakdown
+    const breakdown = await UsageLog.aggregate([
+      { $match: { api_key_id: key._id } },
+      { $group: { _id: "$endpoint", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $project: { endpoint: "$_id", count: 1, _id: 0 } },
+    ]);
+
+    return res.json({
+      keyId: key._id,
+      label: key.label,
+      totalRequests: key.requests_count,
+      limit: key.requests_limit,
+      remaining: Math.max(0, key.requests_limit - key.requests_count),
+      isActive: key.is_active,
+      breakdown,
+      recentLogs: logs,
+    });
+  } catch (err) {
+    console.error("[keys] Usage error:", err.message);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  // Get recent usage logs (last 100)
-  const logs = db.prepare(`
-    SELECT endpoint, timestamp
-    FROM usage_logs
-    WHERE api_key_id = ?
-    ORDER BY timestamp DESC
-    LIMIT 100
-  `).all(keyId);
-
-  // Get per-endpoint breakdown
-  const breakdown = db.prepare(`
-    SELECT endpoint, COUNT(*) as count
-    FROM usage_logs
-    WHERE api_key_id = ?
-    GROUP BY endpoint
-    ORDER BY count DESC
-  `).all(keyId);
-
-  return res.json({
-    keyId: key.id,
-    label: key.label,
-    totalRequests: key.requests_count,
-    limit: key.requests_limit,
-    remaining: Math.max(0, key.requests_limit - key.requests_count),
-    isActive: Boolean(key.is_active),
-    breakdown,
-    recentLogs: logs,
-  });
 });
 
 module.exports = router;

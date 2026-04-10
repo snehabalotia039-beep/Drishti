@@ -1,54 +1,62 @@
 /**
- * db.js -- SQLite Database Setup for Drishti
+ * db.js -- MongoDB Connection for Drishti
  *
- * Tables:
- *   users     - registered users
- *   api_keys  - API keys per user with request limits
- *   usage_logs - per-request log for tracking
+ * Connects to MongoDB Atlas using Mongoose.
+ * Exports Mongoose models: User, ApiKey, UsageLog
  */
 
-const Database = require("better-sqlite3");
-const path = require("path");
+const mongoose = require("mongoose");
 
-const DB_PATH = path.join(__dirname, "drishti.db");
-const db = new Database(DB_PATH);
+// ── Schemas ────────────────────────────────────
 
-// Enable WAL mode for better concurrent performance
-db.pragma("journal_mode = WAL");
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password_hash: { type: String, required: true },
+  created_at: { type: Date, default: Date.now },
+});
 
-// ── Create tables ──────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
+const apiKeySchema = new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  key: { type: String, unique: true, required: true },
+  label: { type: String, default: "Default" },
+  requests_count: { type: Number, default: 0 },
+  requests_limit: { type: Number, default: 1000 },
+  is_active: { type: Boolean, default: true },
+  created_at: { type: Date, default: Date.now },
+});
 
-  CREATE TABLE IF NOT EXISTS api_keys (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    key TEXT UNIQUE NOT NULL,
-    label TEXT DEFAULT 'Default',
-    requests_count INTEGER DEFAULT 0,
-    requests_limit INTEGER DEFAULT 1000,
-    is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
+const usageLogSchema = new mongoose.Schema({
+  api_key_id: { type: mongoose.Schema.Types.ObjectId, ref: "ApiKey", required: true },
+  endpoint: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+});
 
-  CREATE TABLE IF NOT EXISTS usage_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    api_key_id INTEGER NOT NULL,
-    endpoint TEXT NOT NULL,
-    timestamp TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (api_key_id) REFERENCES api_keys(id)
-  );
+// ── Indexes ────────────────────────────────────
+apiKeySchema.index({ key: 1 });
+apiKeySchema.index({ user_id: 1 });
+usageLogSchema.index({ api_key_id: 1 });
 
-  CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
-  CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
-  CREATE INDEX IF NOT EXISTS idx_usage_logs_key ON usage_logs(api_key_id);
-`);
+// ── Models ─────────────────────────────────────
+const User = mongoose.model("User", userSchema);
+const ApiKey = mongoose.model("ApiKey", apiKeySchema);
+const UsageLog = mongoose.model("UsageLog", usageLogSchema);
 
-module.exports = db;
+// ── Connect ────────────────────────────────────
+async function connectDB() {
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.error("[db] MONGO_URI not set in .env");
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(uri);
+    console.log("[db] Connected to MongoDB Atlas");
+  } catch (err) {
+    console.error("[db] MongoDB connection failed:", err.message);
+    process.exit(1);
+  }
+}
+
+module.exports = { connectDB, User, ApiKey, UsageLog };

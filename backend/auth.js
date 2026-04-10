@@ -1,5 +1,5 @@
 /**
- * auth.js -- Authentication Routes for Drishti
+ * auth.js -- Authentication Routes for Drishti (MongoDB)
  *
  * POST /auth/register  - Create account
  * POST /auth/login     - Login, returns JWT
@@ -9,7 +9,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const db = require("./db");
+const { User, ApiKey } = require("./db");
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ const JWT_EXPIRES_IN = "7d";
 // ── Helper: generate JWT ───────────────────────
 function generateToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user._id, email: user.email },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -43,90 +43,100 @@ function authenticate(req, res, next) {
 }
 
 // ── POST /auth/register ────────────────────────
-router.post("/register", (req, res) => {
-  const { name, email, password } = req.body;
+router.post("/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "name, email, and password are required" });
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "name, email, and password are required" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    // Check if email already exists
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+
+    // Hash password
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(password, salt);
+
+    // Insert user
+    const user = await User.create({ name, email, password_hash: passwordHash });
+    const token = generateToken(user);
+
+    console.log(`[auth] New user registered: ${email}`);
+
+    return res.status(201).json({
+      message: "Account created successfully",
+      user: { id: user._id, name, email },
+      token,
+    });
+  } catch (err) {
+    console.error("[auth] Register error:", err.message);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  if (password.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters" });
-  }
-
-  // Check if email already exists
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-  if (existing) {
-    return res.status(409).json({ error: "Email already registered" });
-  }
-
-  // Hash password
-  const salt = bcrypt.genSaltSync(10);
-  const passwordHash = bcrypt.hashSync(password, salt);
-
-  // Insert user
-  const result = db.prepare(
-    "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)"
-  ).run(name, email, passwordHash);
-
-  const user = { id: result.lastInsertRowid, name, email };
-  const token = generateToken(user);
-
-  console.log(`[auth] New user registered: ${email}`);
-
-  return res.status(201).json({
-    message: "Account created successfully",
-    user: { id: user.id, name, email },
-    token,
-  });
 });
 
 // ── POST /auth/login ───────────────────────────
-router.post("/login", (req, res) => {
-  const { email, password } = req.body;
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
+    if (!email || !password) {
+      return res.status(400).json({ error: "email and password are required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    const valid = bcrypt.compareSync(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    const token = generateToken(user);
+
+    console.log(`[auth] User logged in: ${email}`);
+
+    return res.json({
+      message: "Login successful",
+      user: { id: user._id, name: user.name, email: user.email },
+      token,
+    });
+  } catch (err) {
+    console.error("[auth] Login error:", err.message);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-  if (!user) {
-    return res.status(401).json({ error: "Invalid email or password" });
-  }
-
-  const valid = bcrypt.compareSync(password, user.password_hash);
-  if (!valid) {
-    return res.status(401).json({ error: "Invalid email or password" });
-  }
-
-  const token = generateToken(user);
-
-  console.log(`[auth] User logged in: ${email}`);
-
-  return res.json({
-    message: "Login successful",
-    user: { id: user.id, name: user.name, email: user.email },
-    token,
-  });
 });
 
 // ── GET /auth/me ───────────────────────────────
-router.get("/me", authenticate, (req, res) => {
-  const user = db.prepare("SELECT id, name, email, created_at FROM users WHERE id = ?")
-    .get(req.user.id);
+router.get("/me", authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("name email created_at");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
+    const keyCount = await ApiKey.countDocuments({ user_id: user._id });
+
+    return res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      created_at: user.created_at,
+      apiKeyCount: keyCount,
+    });
+  } catch (err) {
+    console.error("[auth] Profile error:", err.message);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  // Count user's API keys
-  const keyCount = db.prepare("SELECT COUNT(*) as count FROM api_keys WHERE user_id = ?")
-    .get(user.id).count;
-
-  return res.json({
-    ...user,
-    apiKeyCount: keyCount,
-  });
 });
 
 module.exports = { authRouter: router, authenticate };
