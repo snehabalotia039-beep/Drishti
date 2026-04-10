@@ -92,14 +92,14 @@ app.post("/detect-emotion", async (req, res) => {
 
     if (aiResponse.ok) {
       const data = await aiResponse.json();
-      console.log("  🎭 Emotion detected:", data.emotion);
+      console.log("  [emotion] Detected:", data.emotion);
       return res.json(data);
     } else {
-      console.log("  ⚠️ AI emotion detection failed:", aiResponse.status);
+      console.log("  [warn] AI emotion detection failed:", aiResponse.status);
       return res.json({ emotion: "neutral", source: "fallback" });
     }
   } catch (err) {
-    console.log("  ⚠️ Emotion detection error:", err.message);
+    console.log("  [warn] Emotion detection error:", err.message);
     return res.json({ emotion: "neutral", source: "fallback" });
   }
 });
@@ -205,13 +205,13 @@ app.post("/analyze", async (req, res) => {
           reasoning: aiData.reasoning || "",
           source: "smart_ai",
         };
-        console.log("  🧠 Smart AI decision ✨");
+        console.log("  [ai] Smart AI decision");
         console.log("    Emotion:", result.emotion, `(${result.emotionSource})`);
         console.log("    User type:", result.reason);
         console.log("    Confidence:", result.confidence);
       } else {
         // Fall back to basic /generate endpoint
-        console.log("  ⚠️ Smart decide failed, trying /generate...");
+        console.log("  [warn] Smart decide failed, trying /generate...");
         try {
           const genResponse = await fetch(`${aiUrl}/generate`, {
             method: "POST",
@@ -229,7 +229,7 @@ app.post("/analyze", async (req, res) => {
               confidence: genData.confidence || 0.5,
               source: "ai",
             };
-            console.log("  AI enhanced (basic) ✨");
+            console.log("  [ai] AI enhanced (basic)");
           }
         } catch {
           console.log("  AI /generate also unavailable, using rules");
@@ -297,7 +297,7 @@ app.get("/sessions", (req, res) => {
 
 // ── Start server ───────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n🔮 Drishti Decision Engine v2.0 running on http://localhost:${PORT}`);
+  console.log(`\nDrishti Decision Engine v2.0 running on http://localhost:${PORT}`);
   console.log(`   POST /analyze        — Analyze behavior + AI decision`);
   console.log(`   POST /detect-emotion — Webcam emotion detection`);
   console.log(`   GET  /sessions       — View session data`);

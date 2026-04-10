@@ -59,7 +59,7 @@ const tests = [
 ];
 
 async function runTests() {
-  console.log("\n🧪 Drishti Backend — Rule Engine Tests\n");
+  console.log("\nDrishti Backend — Rule Engine Tests\n");
   console.log("=".repeat(60));
 
   let passed = 0;
@@ -75,7 +75,7 @@ async function runTests() {
       const data = await res.json();
 
       const ok = data.reason === test.expect;
-      const icon = ok ? "✅" : "❌";
+      const icon = ok ? "PASS" : "FAIL";
 
       console.log(`\n${icon} ${test.name}`);
       console.log(`   Expected: ${test.expect}`);
@@ -87,7 +87,7 @@ async function runTests() {
       if (ok) passed++;
       else failed++;
     } catch (err) {
-      console.log(`\n❌ ${test.name}`);
+      console.log(`\nFAIL ${test.name}`);
       console.log(`   ERROR: ${err.message}`);
       failed++;
     }
@@ -101,18 +101,18 @@ async function runTests() {
       body: JSON.stringify({ apiKey: "wrong", sessionId: "x" }),
     });
     const ok = res.status === 401;
-    const icon = ok ? "✅" : "❌";
-    console.log(`\n${icon} Invalid API key → 401`);
+    const icon = ok ? "PASS" : "FAIL";
+    console.log(`\n${icon} Invalid API key -> 401`);
     console.log(`   Status: ${res.status}`);
     if (ok) passed++;
     else failed++;
   } catch (err) {
-    console.log(`\n❌ Invalid API key test — ${err.message}`);
+    console.log(`\nFAIL Invalid API key test — ${err.message}`);
     failed++;
   }
 
   console.log("\n" + "=".repeat(60));
-  console.log(`\n📊 Results: ${passed} passed, ${failed} failed, ${passed + failed} total\n`);
+  console.log(`\nResults: ${passed} passed, ${failed} failed, ${passed + failed} total\n`);
 }
 
 runTests();
