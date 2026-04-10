@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drishti SDK — Standalone Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
+
+    nav { padding: 16px 32px; background: white; border-bottom: 1px solid #e7e5e4; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+    nav h3 { font-weight: 600; }
+
+    .hero { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 32px; }
+
+    /* ===== Drishti transition classes ===== */
+    .drishti-transition { transition: opacity 0.35s ease, transform 0.35s ease; }
+    .drishti-fade-out { opacity: 0; transform: translateY(4px); }
+    .drishti-fade-in { opacity: 1; transform: translateY(0); }
+    @keyframes drishti-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+      70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .drishti-updated { animation: drishti-pulse 0.6s ease-out; }
+
+    h1#headline { font-size: 3rem; font-weight: 700; max-width: 600px; line-height: 1.2; margin-bottom: 16px; }
+    .sub { color: #78716c; font-size: 1.1rem; max-width: 500px; margin-bottom: 32px; }
+
+    button#cta { background: #1c1917; color: white; padding: 14px 32px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button#cta:hover { background: #292524; }
+
+    .products { padding: 80px 32px; background: white; }
+    .products h2 { text-align: center; font-size: 2rem; margin-bottom: 40px; }
+
+    .filler { padding: 120px 32px; text-align: center; }
+    .filler h2 { color: #a8a29e; font-size: 1.5rem; }
+
+    /* Debug panel */
+    #debug-panel {
+      position: fixed; bottom: 16px; right: 16px; background: #1c1917; color: #e7e5e4;
+      padding: 16px; border-radius: 12px; font-size: 12px; font-family: monospace;
+      min-width: 280px; z-index: 100; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    }
+    #debug-panel h4 { color: #fbbf24; margin-bottom: 8px; font-size: 14px; }
+    #debug-panel .row { display: flex; justify-content: space-between; padding: 3px 0; }
+    #debug-panel .label { color: #a8a29e; }
+    #debug-panel .value { color: white; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <h3>🔮 Drishti SDK Test Page</h3>
+    <span style="color: #78716c; font-size: 14px;">Standalone HTML — no framework</span>
+  </nav>
+
+  <!-- Hero section with Drishti targets -->
+  <section class="hero" data-section="hero">
+    <h1 id="headline" class="drishti-transition">Welcome to our store</h1>
+    <p class="sub">This is a plain HTML page testing the Drishti SDK. Scroll, click, and wait — the headline and CTA should change dynamically.</p>
+    <button id="cta" class="drishti-transition">Shop Now</button>
+  </section>
+
+  <!-- Products section -->
+  <section class="products" data-section="products">
+    <h2>Our Products</h2>
+    <p style="text-align:center; color:#78716c;">Scroll through this section to trigger behavior tracking.</p>
+    <div style="height: 400px;"></div>
+  </section>
+
+  <!-- Filler for scroll -->
+  <section class="filler" data-section="pricing">
+    <h2>Pricing Section</h2>
+    <p style="color:#a8a29e;">More content to enable scrolling...</p>
+    <div style="height: 500px;"></div>
+  </section>
+
+  <!-- Debug panel -->
+  <div id="debug-panel">
+    <h4>🔮 Drishti Debug</h4>
+    <div class="row"><span class="label">Session:</span> <span class="value" id="d-session">—</span></div>
+    <div class="row"><span class="label">Time:</span> <span class="value" id="d-time">0s</span></div>
+    <div class="row"><span class="label">Clicks:</span> <span class="value" id="d-clicks">0</span></div>
+    <div class="row"><span class="label">Scroll Speed:</span> <span class="value" id="d-scroll">—</span></div>
+    <div class="row"><span class="label">Section:</span> <span class="value" id="d-section">—</span></div>
+    <div class="row"><span class="label">Active:</span> <span class="value" id="d-active">—</span></div>
+  </div>
+
+  <!-- Drishti config -->
+  <script>
+    window.DrishtiConfig = {
+      apiKey: "demo123",
+      apiUrl: "http://localhost:5000/analyze",
+      selectors: {
+        headline: "#headline",
+        cta: "#cta"
+      },
+      interval: 5000,
+      enabled: true,
+      debug: true
+    };
+  </script>
+
+  <!-- Load SDK -->
+  <script src="drishti.js"></script>
+
+  <!-- Debug panel updater -->
+  <script>
+    setInterval(() => {
+      if (window.Drishti) {
+        const s = window.Drishti.getState();
+        document.getElementById('d-session').textContent = s.sessionId.substring(0, 20) + '...';
+        document.getElementById('d-time').textContent = s.timeSpent + 's';
+        document.getElementById('d-clicks').textContent = s.clicks;
+        document.getElementById('d-scroll').textContent = s.scrollSpeed;
+        document.getElementById('d-section').textContent = s.currentSection;
+        document.getElementById('d-active').textContent = window.Drishti.isActive() ? '✅ YES' : '❌ NO';
+      }
+    }, 500);
+  </script>
+
+</body>
+</html>
