@@ -1,6 +1,16 @@
 "use client";
 
 export default function Hero() {
+  function scrollToProducts() {
+    const el = document.getElementById("products");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function scrollToPricing() {
+    const el = document.getElementById("pricing");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
     <section
       id="hero"
@@ -9,7 +19,7 @@ export default function Hero() {
       style={{ background: "#fafaf9" }}
     >
       <div className="max-w-6xl mx-auto px-6 py-20 flex flex-col lg:flex-row items-center gap-16">
-        {/* Left — Text Content */}
+        {/* Left -- Text Content */}
         <div className="flex-1 text-center lg:text-left">
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-stone-100 rounded-full mb-6">
@@ -19,7 +29,7 @@ export default function Hero() {
             </span>
           </div>
 
-          {/* Headline — DYNAMIC (Drishti will update this) */}
+          {/* Headline -- DYNAMIC (Drishti will update this) */}
           <h1
             id="headline"
             className="text-4xl sm:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight tracking-tight mb-6 drishti-transition"
@@ -32,15 +42,16 @@ export default function Hero() {
 
           {/* Subtext */}
           <p className="text-lg text-stone-500 max-w-md mx-auto lg:mx-0 mb-8 leading-relaxed">
-            Premium audio and wearables crafted for people who value
-            simplicity, quality, and great design.
+            Premium audio and wearables crafted for people who value simplicity,
+            quality, and great design.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-            {/* Primary CTA — DYNAMIC (Drishti will update this) */}
+            {/* Primary CTA -- DYNAMIC (Drishti will update this) */}
             <button
               id="cta"
+              onClick={scrollToProducts}
               className="inline-flex items-center justify-center gap-2 bg-stone-900 text-white px-7 py-3.5 rounded-lg text-sm font-semibold hover:bg-stone-800 transition-all duration-200 hover:shadow-lg drishti-transition"
             >
               Shop Collection
@@ -59,7 +70,10 @@ export default function Hero() {
               </svg>
             </button>
 
-            <button className="inline-flex items-center justify-center gap-2 border border-stone-300 text-stone-700 px-7 py-3.5 rounded-lg text-sm font-semibold hover:border-stone-400 hover:bg-stone-50 transition-all duration-200">
+            <button
+              onClick={scrollToPricing}
+              className="inline-flex items-center justify-center gap-2 border border-stone-300 text-stone-700 px-7 py-3.5 rounded-lg text-sm font-semibold hover:border-stone-400 hover:bg-stone-50 transition-all duration-200"
+            >
               Learn More
             </button>
           </div>
@@ -78,13 +92,13 @@ export default function Hero() {
               ))}
             </div>
             <div className="text-sm text-stone-500">
-              <span className="font-semibold text-stone-700">20+</span>{" "}
-              happy customers
+              <span className="font-semibold text-stone-700">20+</span> happy
+              customers
             </div>
           </div>
         </div>
 
-        {/* Right — Product Display */}
+        {/* Right -- Product Display */}
         <div className="flex-1 relative">
           <div className="relative w-full max-w-md mx-auto">
             {/* Background shape */}
@@ -98,8 +112,10 @@ export default function Hero() {
               />
               {/* Price tag */}
               <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md">
-                <p className="text-xs text-stone-400 font-medium">Starting at</p>
-                <p className="text-xl font-bold text-stone-900">₹12,999</p>
+                <p className="text-xs text-stone-400 font-medium">
+                  Starting at
+                </p>
+                <p className="text-xl font-bold text-stone-900">Rs. 12,999</p>
               </div>
             </div>
           </div>

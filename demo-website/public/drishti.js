@@ -305,6 +305,23 @@
     }
 
     log("DOM updated →", data.reason, "| emotion:", data.emotion, "| confidence:", data.confidence);
+
+    // Dispatch decision event so React components can react
+    window.dispatchEvent(
+      new CustomEvent("drishti-decision", {
+        detail: {
+          change: data.change,
+          headline: data.headline,
+          cta: data.cta,
+          emotion: data.emotion,
+          reason: data.reason,
+          confidence: data.confidence,
+          contentType: data.contentType,
+          priority: data.priority,
+          source: data.source,
+        },
+      })
+    );
   }
 
   function smoothUpdate(element, newContent, type) {

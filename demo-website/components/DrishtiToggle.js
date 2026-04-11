@@ -11,14 +11,23 @@ export default function DrishtiToggle() {
   useEffect(() => {
     setMounted(true);
 
-    // Listen for emotion detection events from the SDK
+    // Listen for emotion from webcam
     const handleEmotion = (e) => {
       setEmotion(e.detail.emotion);
     };
+    // Listen for emotion from analyze decision response
+    const handleDecision = (e) => {
+      if (e.detail.emotion) {
+        setEmotion(e.detail.emotion);
+      }
+    };
+
     window.addEventListener("drishti-emotion", handleEmotion);
+    window.addEventListener("drishti-decision", handleDecision);
 
     return () => {
       window.removeEventListener("drishti-emotion", handleEmotion);
+      window.removeEventListener("drishti-decision", handleDecision);
     };
   }, []);
 
@@ -96,13 +105,13 @@ export default function DrishtiToggle() {
     }
   }
 
-  // Emotion emoji mapping
-  const emotionEmoji = {
-    love: "❤️",
-    happy: "😊",
-    confused: "😕",
-    bored: "😐",
-    neutral: "😶",
+  // Emotion label colors
+  const emotionColors = {
+    love: "#ef4444",
+    happy: "#22c55e",
+    confused: "#f59e0b",
+    bored: "#a8a29e",
+    neutral: "#78716c",
   };
 
   if (!mounted) return null;
@@ -119,8 +128,8 @@ export default function DrishtiToggle() {
         gap: "8px",
       }}
     >
-      {/* Emotion Badge (shows when webcam is detecting) */}
-      {webcamOn && emotion && (
+      {/* Emotion Badge (shows when Drishti detects an emotion) */}
+      {enabled && emotion && (
         <div
           style={{
             display: "flex",
@@ -134,9 +143,14 @@ export default function DrishtiToggle() {
             animation: "slideUp 0.3s ease",
           }}
         >
-          <span style={{ fontSize: "16px" }}>
-            {emotionEmoji[emotion] || "😶"}
-          </span>
+          <span
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              background: emotionColors[emotion] || "#78716c",
+            }}
+          />
           <span
             style={{
               fontSize: "12px",
@@ -262,9 +276,28 @@ export default function DrishtiToggle() {
               animation: "fadeIn 0.3s ease",
             }}
           >
-            <span style={{ fontSize: "18px" }}>
-              {webcamOn ? "🎭" : "📷"}
-            </span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={webcamOn ? "#fbbf24" : "#78716c"}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {webcamOn ? (
+                <>
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </>
+              ) : (
+                <>
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </>
+              )}
+            </svg>
           </div>
         )}
       </div>

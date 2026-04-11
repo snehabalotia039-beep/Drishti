@@ -1,35 +1,33 @@
 "use client";
 
+import { useEffect } from "react";
 import Script from "next/script";
 
-export default function DrishtiScript() {
-  return (
-    <>
-      {/* Drishti SDK Config — loaded BEFORE the script */}
-      <Script id="drishti-config" strategy="beforeInteractive">
-        {`
-          window.DrishtiConfig = {
-            apiKey: "demo123",
-            apiUrl: "http://localhost:5000/analyze",
-            emotionUrl: "http://localhost:5000/detect-emotion",
-            selectors: {
-              headline: "#headline",
-              cta: "#cta"
-            },
-            interval: 5000,
-            enabled: false,
-            emotionDetection: false,
-            emotionInterval: 10000,
-            debug: true
-          };
-        `}
-      </Script>
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-      {/* Drishti SDK Script */}
-      <Script
-        src="/drishti.js"
-        strategy="afterInteractive"
-      />
-    </>
+export default function DrishtiScript() {
+  // Set DrishtiConfig before SDK loads
+  useEffect(() => {
+    window.DrishtiConfig = {
+      apiKey: "demo123",
+      apiUrl: `${BACKEND_URL}/analyze`,
+      emotionUrl: `${BACKEND_URL}/detect-emotion`,
+      selectors: {
+        headline: "#headline",
+        cta: "#cta",
+      },
+      interval: 5000,
+      enabled: false,
+      emotionDetection: false,
+      emotionInterval: 10000,
+      debug: true,
+    };
+  }, []);
+
+  return (
+    <Script
+      src="/drishti.js"
+      strategy="afterInteractive"
+    />
   );
 }

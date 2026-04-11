@@ -1,4 +1,5 @@
 import { Inter, DM_Sans } from "next/font/google";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: "Luxe Tech — Premium Tech, Simplified",
+  title: "Luxe Tech -- Premium Tech, Simplified",
   description:
     "Discover premium headphones, smartwatches, and speakers designed for modern living.",
 };
@@ -23,7 +24,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${dmSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)]">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
